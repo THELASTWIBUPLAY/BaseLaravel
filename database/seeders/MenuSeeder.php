@@ -14,7 +14,8 @@ class MenuSeeder extends Seeder
     public function run(): void
     {
         // 1. Ambil ID Kategori
-        $makananCategory = Category::where('name', 'Makanan Utama')->first(); // Kita gunakan 'Makanan Utama'
+        // Revisi: Mengambil kategori berdasarkan nama yang benar yang dibuat di CategorySeeder.php
+        $makananCategory = Category::where('name', 'Makanan')->first(); 
         $sideDishCategory = Category::where('name', 'Dimsum & Side Dish')->first();
         $minumanCategory = Category::where('name', 'Minuman')->first();
 

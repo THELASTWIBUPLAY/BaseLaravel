@@ -8,7 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
-    protected $fillable = ['table_id', 'customer_uid', 'total_price', 'status'];
+    protected $fillable = [
+        'table_id', 
+        'customer_name', // DIGANTI
+        'subtotal', 
+        'tax_amount', 
+        'final_total', 
+        'status'];
 
     // Relasi: Order dimiliki oleh SATU Table
     public function table(): BelongsTo

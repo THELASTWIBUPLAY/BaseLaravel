@@ -12,8 +12,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            // Pastikan LevelSeeder dijalankan sebelum AdminUserSeeder
+            LevelSeeder::class, // Mengisi data Level pedas/akses
+
             CategorySeeder::class,
-            LevelSeeder::class,
             TableSeeder::class,
             MenuSeeder::class,
         ]);

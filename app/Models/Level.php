@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Level extends Model
 {
-    protected $fillable = ['name', 'code', 'description'];
+    // 🎯 FIX: Tambahkan 'extra_cost' ke fillable
+    protected $fillable = ['name', 'code', 'description', 'extra_cost'];
 
     /**
      * Relasi: Level digunakan di BANYAK OrderItem.

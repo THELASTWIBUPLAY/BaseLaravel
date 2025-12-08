@@ -15,7 +15,7 @@ class TableSeeder extends Seeder
         // Contoh membuat 10 meja
         for ($i = 1; $i <= 10; $i++) {
             Table::create([
-                'table_number' => 'T-' . str_pad($i, 2, '0', STR_PAD_LEFT), // Hasil: T-01, T-02, ..., T-10
+                'table_number' => 'meja-' . str_pad($i, 2, '0', STR_PAD_LEFT), // Hasil: T-01, T-02, ..., T-10
                 'status' => 'available',
             ]);
         }
