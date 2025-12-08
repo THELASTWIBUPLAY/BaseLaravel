@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Menu extends Model
 {
-    protected $fillable = ['category_id', 'name', 'description', 'price', 'has_level'];
+    protected $fillable = ['category_id', 'name', 'description', 'image', 'price', 'has_level'];
 
     // Relasi: Menu dimiliki oleh SATU Category
     public function category(): BelongsTo

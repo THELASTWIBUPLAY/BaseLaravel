@@ -18,28 +18,34 @@
                         <td>{{ $menu->id }}</td>
                     </tr>
                     <tr>
-                        <th>Nama Menu</th>
-                        <td>{{ $menu->name }}</td>
-                    </tr>
-                    <tr>
                         <th>Kategori</th>
                         <td>{{ $menu->category->name ?? 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nama Menu</th>
+                        <td>{{ $menu->name }}</td>
                     </tr>
                     <tr>
                         <th>Deskripsi</th>
                         <td>{{ $menu->description ?? '-' }}</td>
                     </tr>
                     <tr>
-                        <th>Harga Dasar</th>
+                        <th>Harga</th>
                         <td>Rp {{ number_format($menu->price, 0, ',', '.') }}</td>
                     </tr>
                     <tr>
-                        <th>Perlu Level?</th>
+                        <th>Perlu Level Pedas?</th>
+                        <td>{{ $menu->has_level ? 'Ya' : 'Tidak' }}</td>
+                    </tr>
+                    {{-- BARU: Tampilkan Foto Menu --}}
+                    <tr>
+                        <th>Foto Menu</th>
                         <td>
-                            @if ($menu->has_level)
-                                <span class="badge bg-danger">YA</span>
+                            @if($menu->image)
+                                {{-- Gunakan asset('storage/...') --}}
+                                <img src="{{ asset('storage/' . $menu->image) }}" alt="{{ $menu->name }}" style="max-width: 250px;">
                             @else
-                                <span class="badge bg-success">TIDAK</span>
+                                - (Belum ada foto)
                             @endif
                         </td>
                     </tr>

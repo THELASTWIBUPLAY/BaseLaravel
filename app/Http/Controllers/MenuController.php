@@ -6,6 +6,7 @@ use App\Models\Menu; // Import Model Menu
 use App\Models\Category; // Import Model Category untuk dropdown filter/form
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables; // Untuk DataTables
+use Illuminate\Support\Facades\Storage;
 
 class MenuController extends Controller
 {
@@ -37,7 +38,8 @@ class MenuController extends Controller
     public function list(Request $request)
     {
         // Eager load relasi 'category' agar tidak terjadi N+1 problem
-        $menus = Menu::select('id', 'category_id', 'name', 'price', 'has_level')->with('category');
+        // PASTIKAN kolom 'image' ditambahkan di select()
+        $menus = Menu::select('id', 'category_id', 'name', 'price', 'has_level', 'image')->with('category');
 
         // Filter berdasarkan category_id dari AJAX request (sesuai logika di index.blade.php)
         if ($request->category_id) {
@@ -45,20 +47,31 @@ class MenuController extends Controller
         }
 
         return DataTables::of($menus)
-            ->addIndexColumn() // Menambahkan kolom nomor urut (DT_RowIndex)
+            ->addIndexColumn()
+            ->addColumn('category_name', function ($menu) { // Menambahkan kolom Category Name
+                return $menu->category->name ?? 'N/A';
+            })
+            ->addColumn('has_level_text', function ($menu) { // Menambahkan kolom Teks Level
+                return $menu->has_level ? 'Ya' : 'Tidak';
+            })
+            ->addColumn('image', function ($menu) {
+                if ($menu->image) {
+                    // JALUR HARUS DIAWALI DENGAN 'storage/' UNTUK MENGAKSES SYMLINK
+                    return '<img src="' . asset('storage/' . $menu->image) . '" alt="' . $menu->name . '" style="max-width: 50px; max-height: 50px; border-radius: 5px;">';
+                }
+                return '-';
+            })
             ->addColumn('aksi', function ($menu) { // Menambahkan tombol aksi
-                // Rute mengacu pada prefix 'admin/menus'
                 $btn = '<a href="' . url('/admin/menus/' . $menu->id) . '" class="btn btn-info btn-sm">Detail</a> ';
                 $btn .= '<a href="' . url('/admin/menus/' . $menu->id . '/edit') . '" class="btn btn-warning btn-sm">Edit</a> ';
-                $btn .= '<form class="d-inline-block" method="POST" action="' . url('/admin/menus/' . $menu->id) . '">' .
-                    csrf_field() . method_field('DELETE') .
-                    '<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin menghapus data ini?\');">Hapus</button></form>';
+                $btn .= '<form class="d-inline-block" method="POST" action="' . url('/admin/menus/' . $menu->id) . '">'
+                    . csrf_field() . method_field('DELETE')
+                    . '<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin menghapus data ini?\');">Hapus</button></form>';
                 return $btn;
             })
-            ->rawColumns(['aksi'])
+            ->rawColumns(['aksi', 'image']) // PASTIKAN 'image' ada di sini
             ->make(true);
     }
-
     /**
      * Menampilkan halaman tambah Menu.
      */
@@ -75,7 +88,7 @@ class MenuController extends Controller
 
         // Ambil semua kategori untuk dropdown di form
         $categories = Category::all();
-        
+
         // 👇 SOLUSI: Tambahkan $activeMenu
         $activeMenu = 'menu';
 
@@ -88,22 +101,32 @@ class MenuController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi data
         $request->validate([
-            'category_id' => 'required|exists:categories,id', // Harus ada di tabel categories
-            'name' => 'required|string|max:100|unique:menus,name', // Nama menu harus unik
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string|max:100|unique:menus,name',
             'description' => 'nullable|string|max:255',
-            'price' => 'required|integer|min:0', // Harga harus integer non-negatif
-            'has_level' => 'required|boolean', // Harus 0 atau 1
+            'price' => 'required|integer|min:0',
+            'has_level' => 'required|boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // <--- Validasi untuk foto
         ]);
 
-        Menu::create([
-            'category_id' => $request->category_id,
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'has_level' => $request->has_level,
-        ]);
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $fileName = time() . '_' . $image->getClientOriginalName();
+
+            // PERBAIKAN UTAMA: Gunakan storeAs() dengan parameter ketiga 'public'
+            // Ini memaksa file disimpan ke storage/app/public/images/menu
+            $image->storeAs('images/menu', $fileName, 'public');
+
+            // Simpan path relatif ke database
+            $data['image'] = 'images/menu/' . $fileName;
+        } else {
+            $data['image'] = null;
+        }
+
+        Menu::create($data);
 
         return redirect('/admin/menus')->with('success', 'Data Menu berhasil disimpan.');
     }
@@ -128,7 +151,7 @@ class MenuController extends Controller
         $page = (object) [
             'title' => 'Detail Menu'
         ];
-        
+
         // 👇 SOLUSI: Tambahkan $activeMenu
         $activeMenu = 'menu';
 
@@ -157,7 +180,7 @@ class MenuController extends Controller
 
         // Ambil semua kategori untuk dropdown di form
         $categories = Category::all();
-        
+
         // 👇 SOLUSI: Tambahkan $activeMenu
         $activeMenu = 'menu';
 
@@ -169,22 +192,42 @@ class MenuController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        // Validasi data
         $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'name' => 'required|string|max:100|unique:menus,name,' . $id, // Unik, kecuali ID yang sedang diedit
+            'name' => 'required|string|max:100|unique:menus,name,' . $id,
             'description' => 'nullable|string|max:255',
             'price' => 'required|integer|min:0',
             'has_level' => 'required|boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // <--- Validasi
         ]);
 
-        Menu::find($id)->update([
-            'category_id' => $request->category_id,
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'has_level' => $request->has_level,
-        ]);
+        $menu = Menu::find($id);
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            // 1. Hapus gambar lama (jika ada) dari disk 'public'
+            if ($menu->image) {
+                // Gunakan Storage::disk('public')->delete()
+                Storage::disk('public')->delete($menu->image);
+            }
+
+            // 2. Simpan gambar baru ke disk 'public'
+            $image = $request->file('image');
+            $fileName = time() . '_' . $image->getClientOriginalName();
+
+            // Simpan ke disk 'public'
+            $image->storeAs('images/menu', $fileName, 'public');
+            $data['image'] = 'images/menu/' . $fileName;
+        } else if ($request->input('remove_image')) {
+            // 3. Logika jika checkbox hapus gambar dicentang
+            if ($menu->image) {
+                // Hapus dari disk 'public'
+                Storage::disk('public')->delete($menu->image);
+            }
+            $data['image'] = null;
+        }
+
+        $menu->update($data);
 
         return redirect('/admin/menus')->with('success', 'Data Menu berhasil diubah.');
     }

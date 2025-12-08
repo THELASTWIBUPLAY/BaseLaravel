@@ -6,8 +6,8 @@
             <div class="card-tools"></div>
         </div>
         <div class="card-body">
-            {{-- Pastikan action URL sesuai dengan rute POST untuk menyimpan data --}}
-            <form method="POST" action="{{ url('admin/menus') }}" class="form-horizontal">
+            {{-- PERUBAHAN KRUSIAL: Tambahkan enctype="multipart/form-data" --}}
+            <form method="POST" action="{{ url('admin/menus') }}" class="form-horizontal" enctype="multipart/form-data">
                 @csrf
                 
                 {{-- 1. PILIH KATEGORI --}}
@@ -16,7 +16,6 @@
                     <div class="col-11">
                         <select class="form-control" id="category_id" name="category_id" required>
                             <option value="">- Pilih Kategori -</option>
-                            {{-- $categories adalah variabel yang dikirim dari MenuController::create() --}}
                             @foreach ($categories as $item)
                                 <option value="{{ $item->id }}" @if(old('category_id') == $item->id) selected @endif>
                                     {{ $item->name }}
@@ -52,7 +51,19 @@
                     </div>
                 </div>
 
-                {{-- 4. HARGA --}}
+                {{-- 4. INPUT FOTO MENU (BARU DITAMBAHKAN) --}}
+                <div class="form-group row">
+                    <label class="col-1 control-label col-form-label">Foto Menu</label>
+                    <div class="col-11">
+                        <input type="file" class="form-control" id="image" name="image">
+                        @error('image')
+                            <small class="form-text text-danger">{{ $message }}</small>
+                        @enderror
+                        <small class="form-text text-muted">Max 2MB (JPG/PNG)</small>
+                    </div>
+                </div>
+
+                {{-- 5. HARGA --}}
                 <div class="form-group row">
                     <label class="col-1 control-label col-form-label">Harga (Rp)</label>
                     <div class="col-11">
@@ -64,7 +75,7 @@
                     </div>
                 </div>
                 
-                {{-- 5. PERLU LEVEL? (YA/TIDAK) --}}
+                {{-- 6. PERLU LEVEL? (YA/TIDAK) --}}
                 <div class="form-group row">
                     <label class="col-1 control-label col-form-label">Perlu Level?</label>
                     <div class="col-11">
